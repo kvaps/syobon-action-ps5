@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# syobon-action-ps5 - rebuild the home-screen art.
+# Copyright (C) 2026 Andrei Kvapil
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
 # Rebuild sce_sys/icon0.png, pic0.dds and pic1.dds from the game's sprites.
 #
 #   BC7ENC=/path/to/bc7enc art/make.sh

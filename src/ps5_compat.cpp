@@ -1,3 +1,7 @@
+// syobon-action-ps5 - what the title runtime lacks for PacBrew's libraries.
+// Copyright (C) 2026 Andrei Kvapil
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Symbols PacBrew's libraries and libc++ import that the title's runtime does
 // not provide.
 #include <cstdarg>
@@ -9,64 +13,67 @@
 #include <cstring>
 #include <langinfo.h>
 
-extern "C" {
-
-// libiconv asks for the locale's codeset: the title only runs in the C locale
-char *nl_langinfo(nl_item item)
+extern "C"
 {
-    static char codeset[] = "UTF-8";
-    static char empty[] = "";
-    return item == CODESET ? codeset : empty;
+
+    // libiconv asks for the locale's codeset: the title only runs in the C locale
+    char *nl_langinfo(nl_item item)
+    {
+        static char codeset[] = "UTF-8";
+        static char empty[] = "";
+        return item == CODESET ? codeset : empty;
+    }
+
+    // SDL calls it; the console's copy is in libScePosixForWebKit, which a title
+    // does not load
+    char *strcasestr(const char *haystack, const char *needle)
+    {
+        size_t length = strlen(needle);
+        for (; *haystack; haystack++)
+            if (strncasecmp(haystack, needle, length) == 0)
+                return (char *)haystack;
+        return length ? nullptr : (char *)haystack;
+    }
+
+    // SDL's PS5 video driver opens the USB keyboard and polls the on-screen
+    // keyboard dialog; in a title sceKeyboardInit crashes. Report no keyboard and
+    // no dialog, which SDL already copes with.
+    int __wrap_sceKeyboardInit(void)
+    {
+        return -1;
+    }
+
+    int __wrap_sceKeyboardOpen(int, int, int, void *)
+    {
+        return -1;
+    }
+
+    int __wrap_sceKeyboardReadState(int, void *)
+    {
+        return -1;
+    }
+
+    int __wrap_sceKeyboardClose(int)
+    {
+        return 0;
+    }
+
+    int __wrap_sceImeDialogGetStatus(void)
+    {
+        return 0; // SCE_IME_DIALOG_STATUS_NONE
+    }
+
+    // FreeBSD's MB_CUR_MAX
+    int ___mb_cur_max(void)
+    {
+        return 1;
+    }
 }
 
-// SDL calls it; the console's copy is in libScePosixForWebKit, which a title
-// does not load
-char *strcasestr(const char *haystack, const char *needle)
+namespace std
 {
-    size_t length = strlen(needle);
-    for (; *haystack; haystack++)
-	if (strncasecmp(haystack, needle, length) == 0)
-	    return (char *)haystack;
-    return length ? nullptr : (char *)haystack;
-}
-
-// SDL's PS5 video driver opens the USB keyboard and polls the on-screen
-// keyboard dialog; in a title sceKeyboardInit crashes. Report no keyboard and
-// no dialog, which SDL already copes with.
-int __wrap_sceKeyboardInit(void)
+inline namespace __1
 {
-    return -1;
-}
-
-int __wrap_sceKeyboardOpen(int, int, int, void *)
-{
-    return -1;
-}
-
-int __wrap_sceKeyboardReadState(int, void *)
-{
-    return -1;
-}
-
-int __wrap_sceKeyboardClose(int)
-{
-    return 0;
-}
-
-int __wrap_sceImeDialogGetStatus(void)
-{
-    return 0; // SCE_IME_DIALOG_STATUS_NONE
-}
-
-// FreeBSD's MB_CUR_MAX
-int ___mb_cur_max(void)
-{
-    return 1;
-}
-}
-
-namespace std {
-inline namespace __1 {
 [[noreturn]] void __libcpp_verbose_abort(const char *format, ...)
 {
     va_list args;
@@ -84,20 +91,23 @@ inline namespace __1 {
 #include <atomic>
 #include <sys/mman.h>
 
-extern "C" {
-void *__real_malloc(size_t);
-void __real_free(void *);
-void *__real_calloc(size_t, size_t);
-void *__real_realloc(void *, size_t);
-int __real_posix_memalign(void **, size_t, size_t);
-size_t malloc_usable_size(void *);
+extern "C"
+{
+    void *__real_malloc(size_t);
+    void __real_free(void *);
+    void *__real_calloc(size_t, size_t);
+    void *__real_realloc(void *, size_t);
+    int __real_posix_memalign(void **, size_t, size_t);
+    size_t malloc_usable_size(void *);
 }
 
-namespace {
+namespace
+{
 constexpr size_t kMappedThreshold = 256 << 10;
 constexpr size_t kMappedMax = 1024;
 
-struct Mapped {
+struct Mapped
+{
     void *base;
     size_t size;
 };
@@ -106,9 +116,18 @@ Mapped mapped[kMappedMax];
 size_t mappedCount;
 std::atomic_flag mappedLock = ATOMIC_FLAG_INIT;
 
-struct Guard {
-    Guard() { while (mappedLock.test_and_set(std::memory_order_acquire)) {} }
-    ~Guard() { mappedLock.clear(std::memory_order_release); }
+struct Guard
+{
+    Guard()
+    {
+        while (mappedLock.test_and_set(std::memory_order_acquire))
+        {
+        }
+    }
+    ~Guard()
+    {
+        mappedLock.clear(std::memory_order_release);
+    }
 };
 
 void *mapBlock(size_t size)
@@ -118,7 +137,8 @@ void *mapBlock(size_t size)
     if (base == MAP_FAILED)
         return nullptr;
     Guard guard;
-    if (mappedCount == kMappedMax) {
+    if (mappedCount == kMappedMax)
+    {
         munmap(base, size);
         return nullptr;
     }
@@ -130,7 +150,8 @@ void *mapBlock(size_t size)
 size_t findBlock(void *block, bool release)
 {
     Guard guard;
-    for (size_t i = 0; i < mappedCount; i++) {
+    for (size_t i = 0; i < mappedCount; i++)
+    {
         if (mapped[i].base != block)
             continue;
         size_t size = mapped[i].size;
@@ -142,58 +163,60 @@ size_t findBlock(void *block, bool release)
 }
 } // namespace
 
-extern "C" {
-void *__wrap_malloc(size_t size)
+extern "C"
 {
-    if (size >= kMappedThreshold)
-        return mapBlock(size);
-    return __real_malloc(size);
-}
-
-void __wrap_free(void *block)
-{
-    if (!block)
-        return;
-    if (size_t size = findBlock(block, true))
-        munmap(block, size);
-    else
-        __real_free(block);
-}
-
-void *__wrap_calloc(size_t count, size_t size)
-{
-    if (size && count > SIZE_MAX / size)
-        return nullptr;
-    if (count * size >= kMappedThreshold)
-        return mapBlock(count * size); // anonymous mappings are zeroed
-    return __real_calloc(count, size);
-}
-
-void *__wrap_realloc(void *block, size_t size)
-{
-    if (!block)
-        return __wrap_malloc(size);
-    size_t old = findBlock(block, false);
-    if (!old && size < kMappedThreshold)
-        return __real_realloc(block, size);
-    if (old && size <= old)
-        return block;
-    if (!old)
-        old = malloc_usable_size(block);
-    void *moved = __wrap_malloc(size);
-    if (!moved)
-        return nullptr;
-    memcpy(moved, block, old < size ? old : size);
-    __wrap_free(block);
-    return moved;
-}
-
-int __wrap_posix_memalign(void **result, size_t alignment, size_t size)
-{
-    if (size >= kMappedThreshold && alignment <= 0x4000) {
-        *result = mapBlock(size);
-        return *result ? 0 : ENOMEM;
+    void *__wrap_malloc(size_t size)
+    {
+        if (size >= kMappedThreshold)
+            return mapBlock(size);
+        return __real_malloc(size);
     }
-    return __real_posix_memalign(result, alignment, size);
-}
+
+    void __wrap_free(void *block)
+    {
+        if (!block)
+            return;
+        if (size_t size = findBlock(block, true))
+            munmap(block, size);
+        else
+            __real_free(block);
+    }
+
+    void *__wrap_calloc(size_t count, size_t size)
+    {
+        if (size && count > SIZE_MAX / size)
+            return nullptr;
+        if (count * size >= kMappedThreshold)
+            return mapBlock(count * size); // anonymous mappings are zeroed
+        return __real_calloc(count, size);
+    }
+
+    void *__wrap_realloc(void *block, size_t size)
+    {
+        if (!block)
+            return __wrap_malloc(size);
+        size_t old = findBlock(block, false);
+        if (!old && size < kMappedThreshold)
+            return __real_realloc(block, size);
+        if (old && size <= old)
+            return block;
+        if (!old)
+            old = malloc_usable_size(block);
+        void *moved = __wrap_malloc(size);
+        if (!moved)
+            return nullptr;
+        memcpy(moved, block, old < size ? old : size);
+        __wrap_free(block);
+        return moved;
+    }
+
+    int __wrap_posix_memalign(void **result, size_t alignment, size_t size)
+    {
+        if (size >= kMappedThreshold && alignment <= 0x4000)
+        {
+            *result = mapBlock(size);
+            return *result ? 0 : ENOMEM;
+        }
+        return __real_posix_memalign(result, alignment, size);
+    }
 }

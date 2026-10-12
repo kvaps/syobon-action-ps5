@@ -16,7 +16,8 @@ fi
 
 mapfile -d '' sources < <(find "$root/src" "$root/tooling/native" "$root/tests" "$root/examples" -type f \
     \( -name '*.c' -o -name '*.cc' -o -name '*.cpp' -o -name '*.h' -o -name '*.hpp' \) \
-    -print0)
+    ! -path "$root/src/game/*" -print0)
+# src/game is the game's own code: it keeps OpenSyobonAction's formatting
 if [[ ${1:-} == --check ]]; then
     "$formatter" --dry-run --Werror "${sources[@]}"
 elif [[ $# -eq 0 ]]; then

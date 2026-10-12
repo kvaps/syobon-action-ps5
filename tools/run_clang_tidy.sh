@@ -52,7 +52,7 @@ if (( ${#example_c_sources[@]} )); then
 fi
 
 mapfile -d '' app_cpp_sources < <(find "$root/src" -type f \
-    \( -name '*.cc' -o -name '*.cpp' \) -print0)
+    \( -name '*.cc' -o -name '*.cpp' \) ! -path "$root/src/game/*" -print0)
 mapfile -d '' example_cpp_sources < <(find "$root/examples" -type f \
     \( -name '*.cc' -o -name '*.cpp' \) -print0)
 app_cpp_sources+=("${example_cpp_sources[@]}")

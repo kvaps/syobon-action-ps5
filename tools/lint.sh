@@ -20,13 +20,12 @@ checked=0
 for file in "${repository_files[@]}"; do
     [[ -f $file ]] || continue
     case "$file" in
-        third_party/*)
-            continue # Vendored code keeps its upstream attribution and formatting.
+        third_party/*|src/game/*)
+            continue # Vendored code and the game keep their upstream attribution and formatting.
             ;;
         *.c|*.cc|*.cpp|*.h|*.hpp|*.ld|*.py|*.ps1|*.sh|*.yml|*.yaml|Makefile|.clang-format|.clang-tidy|.env.example)
             header=$(head -n 20 "$file")
-            grep -Fq ps5-native-app-boilerplate <<<"$header"
-            grep -Fq 'Copyright (C) 2026 BlackBearReloaded' <<<"$header"
+            grep -Eq 'Copyright \(C\) 2026 ' <<<"$header"
             grep -Fq 'SPDX-License-Identifier: GPL-3.0-or-later' <<<"$header"
             ((checked += 1))
             ;;

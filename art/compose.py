@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# syobon-action-ps5 - home-screen art from the game's sprites.
+# Copyright (C) 2026 Andrei Kvapil
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Compose the home-screen art from the game's own sprites.
 
     python3 art/compose.py OUTPUT_DIR
