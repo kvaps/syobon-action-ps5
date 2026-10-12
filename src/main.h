@@ -60,6 +60,7 @@ int rand(int Rand);
 //描画
 Uint32 color;
 Uint32 gfxcolor;
+bool stageSelectShown;
 void setfont(int a);
 void setcolor(int red, int green, int blue);
 void setc0();

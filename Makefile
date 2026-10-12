@@ -11,14 +11,17 @@ APP_DEFINITIONS ?=
 APP_INCLUDE_PATHS ?=
 APP_STATIC_ARCHIVES ?=
 APP_RUNTIME_MODULES ?=
-APP_WRAP_SYMBOLS ?=
+# SDL's PS5 video driver opens the keyboard, which a title cannot; the title's
+# libc heap stops at about 16 MiB (src/ps5_compat.cpp)
+APP_WRAP_SYMBOLS ?= sceKeyboardInit sceKeyboardOpen sceKeyboardReadState \
+	sceKeyboardClose sceImeDialogGetStatus malloc free calloc realloc posix_memalign
 APP_SOURCE_DIR ?=
 APP_PARAM ?=
 APP_SCE_SYS ?=
 APP_ASSETS ?= assets
 APP_ROOT_FILES ?=
 APP_LAPY_HELPER ?= 0
-PACBREW_PACKAGES ?=
+PACBREW_PACKAGES ?= SDL2_gfx SDL2_image SDL2_mixer SDL2_ttf sdl2
 PACBREW_INCLUDE_PATHS ?=
 PACBREW_STATIC_ARCHIVES ?=
 PS5_HOST ?=
@@ -69,7 +72,7 @@ doctor:
 	@printf '%s\n' '==> [doctor] Checking the Linux/WSL host without changing it'
 	@bash tools/doctor.sh
 
-test: test-unit test-integration test-elevation test-update-check test-self-update
+test: test-integration test-elevation test-update-check test-self-update
 
 .PHONY: test-elevation
 test-elevation:
@@ -105,9 +108,7 @@ test-deps:
 	@bash tools/setup-test-dependencies.sh >/dev/null
 
 test-unit:
-	@bash tools/build-tests.sh
-	@printf '%s\n' '==> [test-unit] Running host-native GoogleTest application tests'
-	@$(HOST_UNIT_TEST) $(GTEST_ARGS)
+	@printf '%s\n' '==> [test-unit] The game has no host unit tests'
 
 test-integration:
 	@printf '%s\n' '==> [test-integration] Running host tooling integration tests'

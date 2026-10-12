@@ -5,11 +5,13 @@
 int main(int argc, char *argv[])
 {
     parseArgs(argc, argv);
+    Trace("start\n");
     if (DxLib_Init() == -1)
 	return 1;
 
 //全ロード
     loadg();
+    Trace("assets loaded\n");
 
 //フォント
     SetFontSize(16);
@@ -25,6 +27,7 @@ int main(int argc, char *argv[])
 	    break;
     }
 
+    Trace("main loop left: maint %d\n", maint);
 //ＤＸライブラリ使用の終了処理
     end();
 }
@@ -1125,6 +1128,12 @@ void rpaint()
 	setcolor(0, 0, 0);
 	str("Enterキーを押せ!!", 240 - 8 * 20 / 2, 250);
 
+	if (stageSelectShown) {
+	    char stage[32];
+	    snprintf(stage, sizeof(stage), "< L1  STAGE %d-%d  R1 >", sta, stb);
+	    str(stage, 240 - 8 * 22 / 2, 275);
+	}
+
     }
     ScreenFlip();
 
@@ -1138,6 +1147,47 @@ void Mainprogram()
 
     if (ending == 1)
 	mainZ = 2;
+
+    // Options (Enter) pauses a stage; Triangle (F1) leaves the pause for the title
+    {
+	static bool paused, pauseHeld;
+	bool pauseKey = CheckHitKey(KEY_INPUT_RETURN) == 1;
+	bool pressed = pauseKey && !pauseHeld;
+	pauseHeld = pauseKey;
+	if (mainZ != 1)
+	    paused = false;
+	else if (pressed) {
+	    paused = !paused;
+	    if (paused) {
+		Mix_PauseMusic();
+		Mix_Pause(-1);
+	    } else {
+		Mix_ResumeMusic();
+		Mix_Resume(-1);
+	    }
+	}
+	if (paused && CheckHitKey(KEY_INPUT_F1) == 1) {
+	    paused = false;
+	    Mix_HaltMusic();
+	    Mix_HaltChannel(-1);
+	    Mix_ResumeMusic();
+	    Mix_Resume(-1);
+	    mainZ = 100;
+	    maintm = 0;
+	}
+	if (paused) {
+	    setcolor(0, 0, 0);
+	    fillrect(240 - 110, 150, 220, 90);
+	    setcolor(255, 255, 255);
+	    drawrect(240 - 110, 150, 220, 90);
+	    str("PAUSE", 240 - 8 * 5 / 2, 165);
+	    str("OPTIONS: CONTINUE", 240 - 8 * 17 / 2, 192);
+	    str("TRIANGLE: TITLE", 240 - 8 * 15 / 2, 214);
+	    ScreenFlip();
+	    wait2(stime, long (GetNowCount()), 1000 / 30);
+	    return;
+	}
+    }
 
 //キー
 
@@ -4408,6 +4458,33 @@ if (atype[t]==133){msoubi=4;}
 	    stb = 1;
 	    stc = 0;
 	    over = 0;
+	    stageSelectShown = false;
+	}
+
+	// L1 and R1 (PageUp, PageDown) step through the stages
+	{
+	    static const int stages[][2] = {
+		{1, 1}, {1, 2}, {1, 3}, {1, 4}, {2, 1}, {2, 2}, {2, 3}, {2, 4}, {3, 1},
+	    };
+	    const int count = sizeof(stages) / sizeof(stages[0]);
+	    static bool prevHeld, nextHeld;
+	    bool prev = CheckHitKey(KEY_INPUT_PGUP) == 1;
+	    bool next = CheckHitKey(KEY_INPUT_PGDN) == 1;
+	    if ((prev && !prevHeld) || (next && !nextHeld)) {
+		int current = 0;
+		for (int i = 0; i < count; i++)
+		    if (stages[i][0] == sta && stages[i][1] == stb)
+			current = i;
+		if (stageSelectShown)
+		    current = (current + (next && !nextHeld ? 1 : count - 1)) % count;
+		sta = stages[current][0];
+		stb = stages[current][1];
+		stc = 0;
+		over = 0;
+		stageSelectShown = true;
+	    }
+	    prevHeld = prev;
+	    nextHeld = next;
 	}
 
 	if (CheckHitKey(KEY_INPUT_1) == 1) {
@@ -4703,10 +4780,12 @@ int rand(int Rand)
 //終了
 void deinit()
 {
+    if (!screen)
+	return;
     setc0();
     FillScreen();
     DrawString(200, 200, "EXITING...", GetColor(255, 255, 255));
-    SDL_Flip(screen);
+    ScreenFlip();
 
 //SURFACES
     for (t = 0; t < 51; t++)
@@ -4743,7 +4822,8 @@ void deinit()
 void setcolor(int red, int green, int blue)
 {
     color = GetColor(red, green, blue);
-    gfxcolor = red << 8 * 3 | green << 8 * 2 | blue << 8 | 0xFF;
+    // SDL2_gfx takes 0xAABBGGRR
+    gfxcolor = 0xFFu << 8 * 3 | blue << 8 * 2 | green << 8 | red;
 }
 
 //色かえ(黒)(白)
@@ -4760,37 +4840,37 @@ void setc1()
 //点
 void drawpixel(int a, int b)
 {
-    pixelColor(screen, a, b, gfxcolor);
+    pixelColor(screenRenderer, a, b, gfxcolor);
 }
 
 //線
 void drawline(int a, int b, int c, int d)
 {
-    lineColor(screen, a, b, c, d, gfxcolor);
+    lineColor(screenRenderer, a, b, c, d, gfxcolor);
 }
 
 //四角形(塗り無し)
 void drawrect(int a, int b, int c, int d)
 {
-    rectangleColor(screen, a, b, a + c - 1, b + d - 1, gfxcolor);
+    rectangleColor(screenRenderer, a, b, a + c - 1, b + d - 1, gfxcolor);
 }
 
 //四角形(塗り有り)
 void fillrect(int a, int b, int c, int d)
 {
-    boxColor(screen, a, b, a + c - 1, b + d - 1, gfxcolor);
+    boxColor(screenRenderer, a, b, a + c - 1, b + d - 1, gfxcolor);
 }
 
 //円(塗り無し)
 void drawarc(int a, int b, int c, int d)
 {
-    ellipseColor(screen, a, b, c, d, gfxcolor);
+    ellipseColor(screenRenderer, a, b, c, d, gfxcolor);
 }
 
 //円(塗り有り)
 void fillarc(int a, int b, int c, int d)
 {
-    filledEllipseColor(screen, a, b, c, d, gfxcolor);
+    filledEllipseColor(screenRenderer, a, b, c, d, gfxcolor);
 }
 
 void FillScreen()
