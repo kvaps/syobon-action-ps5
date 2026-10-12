@@ -11,17 +11,20 @@ APP_DEFINITIONS ?=
 APP_INCLUDE_PATHS ?=
 APP_STATIC_ARCHIVES ?=
 APP_RUNTIME_MODULES ?=
-# SDL's PS5 video driver opens the keyboard, which a title cannot; the title's
-# libc heap stops at about 16 MiB (src/ps5_compat.cpp)
-APP_WRAP_SYMBOLS ?= sceKeyboardInit sceKeyboardOpen sceKeyboardReadState \
-	sceKeyboardClose sceImeDialogGetStatus malloc free calloc realloc posix_memalign
+APP_WRAP_SYMBOLS ?=
 APP_SOURCE_DIR ?=
 APP_PARAM ?=
 APP_SCE_SYS ?=
 APP_ASSETS ?= assets
 APP_ROOT_FILES ?=
 APP_LAPY_HELPER ?= 0
-PACBREW_PACKAGES ?= SDL2_gfx SDL2_image SDL2_mixer SDL2_ttf sdl2
+PACBREW_PACKAGES ?=
+# The game's own libraries and wraps, for the app alone (the examples build without them).
+# SDL's PS5 video driver opens the keyboard, which a title cannot; the title's
+# libc heap stops at about 16 MiB (src/ps5_compat.cpp).
+GAME_PACBREW_PACKAGES := SDL2_gfx SDL2_image SDL2_mixer SDL2_ttf sdl2
+GAME_WRAP_SYMBOLS := sceKeyboardInit sceKeyboardOpen sceKeyboardReadState \
+	sceKeyboardClose sceImeDialogGetStatus malloc free calloc realloc posix_memalign
 PACBREW_INCLUDE_PATHS ?=
 PACBREW_STATIC_ARCHIVES ?=
 PS5_HOST ?=
@@ -141,7 +144,9 @@ $(RUNTIME): $(RUNTIME_INPUTS)
 
 app: $(RUNTIME)
 	@printf '%s\n' '==> [app] Compiling, linking, signing, and assembling the app folder'
-	@bash tools/build.sh Folder
+	@PACBREW_PACKAGES="$(GAME_PACBREW_PACKAGES) $(PACBREW_PACKAGES)" \
+		APP_WRAP_SYMBOLS="$(GAME_WRAP_SYMBOLS) $(APP_WRAP_SYMBOLS)" \
+		bash tools/build.sh Folder
 
 sandbox-elevation-example: $(RUNTIME)
 	@printf '%s\n' '==> [sandbox-elevation] Building the embedded upstream-Lapy proof folder and ZIP'
