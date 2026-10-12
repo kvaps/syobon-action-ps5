@@ -165,8 +165,10 @@ if (( ${#pacbrew_packages[@]} > 0 || ${#pacbrew_includes[@]} > 0 || ${#pacbrew_a
         'import json,sys; [print(v, end="\0") for v in json.loads(sys.argv[1])["cflags"]]' \
         "$pacbrew_resolution")
     mapfile -d '' -t pacbrew_libs < <(python3 -c \
-        'import json,sys; [print(v, end="\0") for v in json.loads(sys.argv[1])["libs"]]' \
+        'import json,sys; [print(v, end="\0") for v in json.loads(sys.argv[1])["libs"] if not v.startswith("-D")]' \
         "$pacbrew_resolution")
+    # PacBrew's SDL names the console's system libraries with -l: their stubs are the SDK's
+    pacbrew_libs+=("-L$sdk_root/target/lib")
     pacbrew_root=$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["root"])' \
         "$pacbrew_resolution")
     for include in "${pacbrew_includes[@]}"; do

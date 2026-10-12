@@ -79,7 +79,7 @@ if [[ -z $zlib_library || ! -f $zlib_root/usr/include/zlib.h ||
     (
         cd "$zlib_source"
         CC="$compiler" AR="$archiver" RANLIB="$ranlib" ./configure --static --prefix=/usr
-        make -j "$jobs" CC="$compiler" AR="$archiver" RANLIB="$ranlib"
+        make -j "$jobs" CC="$compiler" AR="$archiver" RANLIB="$ranlib" ARFLAGS=rc
         make DESTDIR="$zlib_root" install
     ) >"$zlib_directory/build.log"
     printf '%s\n' "$zlib_version" >"$zlib_stamp"
