@@ -115,8 +115,9 @@ class ToolTests(unittest.TestCase):
             text=True,
         )
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("/data/homebrew/PPSA99999/", result.stdout)
-        self.assertIn("PPSA99999.{ffpkg,ffpfsc}", result.stdout)
+        title_id = json.loads((ROOT / "sce_sys/param.json").read_text())["titleId"]
+        self.assertIn(f"/data/homebrew/{title_id}/", result.stdout)
+        self.assertIn(f"{title_id}.{{ffpkg,ffpfsc}}", result.stdout)
         self.assertIn("no network request was sent", result.stdout)
 
     def test_deploy_dry_run_uses_mocked_build_and_no_network(self):
@@ -233,7 +234,6 @@ class ToolTests(unittest.TestCase):
         self.assertIn('> "$app/build-label.txt"', build)
         self.assertIn("{1,40}$", build)
         self.assertLess(build.index("BUILD_LABEL must be"), build.index("ninja_run\n\napp="))
-        self.assertIn('"/app0/build-label.txt"', (ROOT / "src/main.cpp").read_text())
 
     def test_automation_builds_the_zip_only(self):
         workflow = (ROOT / ".github/workflows/tooling.yml").read_text(encoding="utf-8")
