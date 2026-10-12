@@ -1,5 +1,7 @@
 # Syobon Action for PlayStation 5
 
+![Syobon Action](docs/images/title.png)
+
 A native PS5 homebrew port of [Syobon Action](https://en.wikipedia.org/wiki/Syobon_Action) (しょぼんのアクション), the deliberately unfair platformer by Chiku. It starts from the home screen like any other title, as `PPSA99310`.
 
 The game is [OpenSyobonAction](https://github.com/akemin-dayo/OpenSyobonAction), the open-source SDL rewrite, moved from SDL 1.2 to SDL2 and packaged with [ps5-native-app-boilerplate](https://github.com/blackbearreloaded/ps5-native-app-boilerplate).
