@@ -2,7 +2,7 @@
 
 ![Syobon Action](docs/images/title.png)
 
-A native PS5 homebrew port of [Syobon Action](https://en.wikipedia.org/wiki/Syobon_Action) (しょぼんのアクション), also known as Cat Mario, the deliberately unfair platformer by Chiku. It starts from the home screen like any other title, as `PPSA99310`.
+A native PS5 homebrew port of [Syobon Action](https://en.wikipedia.org/wiki/Syobon_Action) (しょぼんのアクション), also known as Cat Mario, the deliberately unfair platformer by Chiku. It starts from the home screen like any other title, as `PPSA47402`.
 
 The game is [OpenSyobonAction](https://github.com/akemin-dayo/OpenSyobonAction), the open-source SDL rewrite, moved from SDL 1.2 to SDL2 and packaged with [ps5-native-app-boilerplate](https://github.com/blackbearreloaded/ps5-native-app-boilerplate).
 
@@ -18,11 +18,11 @@ Tested on one console, firmware 13.42 with kstuff-lite and ShadowMountPlus.
 
 You need a PS5 that already runs homebrew, with ShadowMountPlus (it lists titles in `/data/homebrew` on the home screen) and an FTP server.
 
-1. Build the title (below), or take `PPSA99310.zip` from a release and unzip it.
-2. Copy the `PPSA99310` folder to the console, so that it becomes `/data/homebrew/PPSA99310/`.
+1. Build the title (below), or take `PPSA47402.zip` from a release and unzip it.
+2. Copy the `PPSA47402` folder to the console, so that it becomes `/data/homebrew/PPSA47402/`.
 3. Let ShadowMountPlus rescan, then start **Syobon Action** from the home screen.
 
-To update, close the game and replace the folder's files. If the home screen keeps an old icon, remove the title from the home screen and let it be added again.
+To update, close the game and replace the folder's files. Release 01.000.000 used the title ID `PPSA99310`, which another app holds in the homebrew catalog; from 01.001.000 the game is `PPSA47402`, so remove an old `/data/homebrew/PPSA99310/` folder by hand. If the home screen keeps an old icon, remove the title from the home screen and let it be added again.
 
 ## Controls
 
@@ -55,7 +55,7 @@ Then:
 make USE_CCACHE=0
 ```
 
-The title folder is `dist/PPSA99310/`, and `dist/PPSA99310.zip` holds the same folder.
+The title folder is `dist/PPSA47402/`, and `dist/PPSA47402.zip` holds the same folder.
 
 The game writes a short start-up log to `/data/syobon/log.txt` when it can, or to its own `/download0/log.txt`.
 
